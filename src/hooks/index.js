@@ -24,46 +24,38 @@ export function useTheme() {
 }
 
 /**
- * 從 URL search params 讀取 ?avatar=<url>，
- * 若無則使用 siteConfig 的預設值。
- * 同時提供 setAvatarUrl 讓使用者在運行時手動覆寫。
+ * 大頭照 URL — 固定從 siteConfig 讀取，不支援外部覆寫。
+ * 要更換大頭照請直接修改 src/data/siteConfig.js 的 avatarUrl。
  */
 export function useAvatarUrl() {
-  const getInitialUrl = () => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('avatar') || SITE_CONFIG.avatarUrl;
-  };
-
-  const [avatarUrl, setAvatarUrl] = useState(getInitialUrl);
-
-  // 監聽 popstate（瀏覽器上/下一頁）
-  useEffect(() => {
-    const handler = () => {
-      const params = new URLSearchParams(window.location.search);
-      const fromUrl = params.get('avatar');
-      if (fromUrl) setAvatarUrl(fromUrl);
-    };
-    window.addEventListener('popstate', handler);
-    return () => window.removeEventListener('popstate', handler);
-  }, []);
-
+  const avatarUrl = SITE_CONFIG.avatarUrl;
+  // 回傳相同介面，但 setAvatarUrl 為 no-op，防止外部意外寫入
+  const setAvatarUrl = () => {};
   return { avatarUrl, setAvatarUrl };
 }
 
 /**
  * 管理全域搜尋狀態
+ * 比對範圍：標題、摘要、分類、標籤、章節標題、章節內文（不分大小寫）
  */
 export function useSearch(novels) {
   const [query, setQuery] = useState('');
 
   const results = query.trim()
-    ? novels.filter(
-        n =>
-          n.title.includes(query) ||
-          n.summary.includes(query) ||
-          n.tags.some(t => t.includes(query)) ||
-          n.category.includes(query)
-      )
+    ? novels.filter(n => {
+        const q = query.trim().toLowerCase();
+        return (
+          n.title.toLowerCase().includes(q) ||
+          n.summary.toLowerCase().includes(q) ||
+          n.category.toLowerCase().includes(q) ||
+          n.tags.some(t => t.toLowerCase().includes(q)) ||
+          n.chapters?.some(
+            c =>
+              c.title.toLowerCase().includes(q) ||
+              c.content.toLowerCase().includes(q)
+          )
+        );
+      })
     : novels;
 
   return { query, setQuery, results };

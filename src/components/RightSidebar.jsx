@@ -1,14 +1,32 @@
 // ============================================================
 // RightSidebar — 搜尋、紀錄、分類、標籤雲（全部可互動）
 // ============================================================
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Archive, BookOpen, Tag, Search } from './icons';
 import { NOVELS } from '../data/novels';
 
-export default function RightSidebar({ onSearch, onFilterTag, onFilterCategory, onNavClick }) {
+export default function RightSidebar({ onSearch, onFilterTag, onFilterCategory, onNavClick, onSelectNovel }) {
   const categories = Array.from(new Set(NOVELS.map(n => n.category)));
   const tags       = Array.from(new Set(NOVELS.flatMap(n => n.tags)));
   const years      = Array.from(new Set(NOVELS.map(n => n.date.slice(0, 4))));
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 搜尋邏輯：比對 title、summary、tags、category、章節內容
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return NOVELS.filter(n =>
+      n.title.toLowerCase().includes(q) ||
+      n.summary.toLowerCase().includes(q) ||
+      n.category.toLowerCase().includes(q) ||
+      n.tags.some(t => t.toLowerCase().includes(q)) ||
+      n.chapters?.some(c =>
+        c.title.toLowerCase().includes(q) ||
+        c.content.toLowerCase().includes(q)
+      )
+    );
+  }, [searchQuery]);
 
   return (
     <aside className="hidden xl:flex w-[320px] flex-col gap-10 py-10 px-6 sticky top-0 h-screen overflow-y-auto custom-scrollbar">
@@ -21,10 +39,30 @@ export default function RightSidebar({ onSearch, onFilterTag, onFilterCategory, 
         <input
           type="text"
           placeholder="搜尋文章…"
-          onChange={e => onSearch(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { onNavClick('search'); } }}
+          value={searchQuery}
+          onChange={e => { setSearchQuery(e.target.value); onSearch(e.target.value); }}
           className="w-full bg-[#ebebeb] dark:bg-[#252627] text-[#333] dark:text-white rounded-xl py-3.5 px-5 pr-12 focus:outline-none placeholder-[#888] text-[15px] transition-colors"
         />
+
+        {/* 即時搜尋結果下拉 */}
+        {searchQuery.trim() && (
+          <div className="mt-2 bg-white dark:bg-[#1a1a1a] rounded-xl border border-[#e0e0e0] dark:border-[#323232] overflow-hidden shadow-lg">
+            {searchResults.length === 0 ? (
+              <p className="px-5 py-4 text-[14px] text-[#aaa]">找不到相符的內容</p>
+            ) : (
+              searchResults.map(novel => (
+                <button
+                  key={novel.id}
+                  onClick={() => { onSelectNovel(novel); setSearchQuery(''); onSearch(''); }}
+                  className="w-full text-left px-5 py-3.5 hover:bg-[#f8f9fa] dark:hover:bg-[#252627] transition-colors border-b border-[#f0f0f0] dark:border-[#2a2a2a] last:border-0"
+                >
+                  <p className="text-[15px] font-medium text-[#333] dark:text-white truncate">{novel.title}</p>
+                  <p className="text-[13px] text-[#aaa] mt-0.5 truncate">{novel.summary}</p>
+                </button>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── 紀錄 Widget ── */}

@@ -196,6 +196,7 @@ export default function App() {
           onFilterTag={handleFilterTag}
           onFilterCategory={handleFilterCategory}
           onNavClick={handleNavClick}
+          onSelectNovel={openNovel}
         />
 
       </div>
