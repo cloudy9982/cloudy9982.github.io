@@ -116,7 +116,10 @@ export const SITE_CONFIG = {
 ## 部署到 GitHub Pages
 
 ```bash
-npm run build
+git add .
+git commit -m "cotent"
+git push
+npm run deploy
 # 將 dist/ 目錄推送到 gh-pages 分支
 ```
 
