@@ -4,8 +4,8 @@
 // ============================================================
 
 export const SITE_CONFIG = {
-  title: 'Hugo 主題 Stack',
-  subtitle: '為博客設計的卡片式 Hugo 主題',
+  title: 'Cloudy咲雲',
+  subtitle: '走一步算一步，寫小說也一樣',
 
   /** 大頭照 URL — 只能在此修改 */
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
