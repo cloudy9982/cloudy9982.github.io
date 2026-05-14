@@ -1,0 +1,11 @@
+{
+  "readOnlyPatterns": [
+    "src/components/**",
+    "src/hooks/**",
+    "src/assets/**",
+    "index.css"
+  ],
+  "writePatterns": [
+    "src/data/**"
+  ]
+}

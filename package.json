@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "homepage": "https://cloudy9982.github.io",
   "type": "module",
-    "scripts": {
+  "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

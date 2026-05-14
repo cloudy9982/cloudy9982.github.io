@@ -4,13 +4,13 @@
 import React from 'react';
 import {
   Home, User, Archive, Search, LinkIcon,
-  BookOpen, Moon, Sun,
+  BookOpen, Moon, Sun, MapPin,
   GithubIcon, TwitterIcon,
 } from './icons';
 import AvatarEditor from './AvatarEditor';
 import { SITE_CONFIG } from '../data/siteConfig';
 
-const NAV_ICON_MAP = { Home, User, BookOpen, Archive, Search, Link: LinkIcon };
+const NAV_ICON_MAP = { Home, User, BookOpen, Archive, Search, Link: LinkIcon, MapPin };
 
 export default function LeftSidebar({
   activeTab,

@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 
 // 資料
 import { NOVELS } from './data/novels';
+import { TRAVELS } from './data/travels';
 
 // Hooks
 import { useTheme, useAvatarUrl, useSearch } from './hooks';
@@ -17,6 +18,8 @@ import RightSidebar  from './components/RightSidebar';
 import ArticleCard   from './components/ArticleCard';
 import { NovelDetail, ReaderView } from './components/NovelViews';
 import AboutPage from './components/AboutPage';
+import TravelPage from './components/TravelPage';
+import HakodateApp from './components/hakodate/HakodateApp';
 
 export default function App() {
   // ── 全域狀態 ────────────────────────────────────────────
@@ -27,6 +30,7 @@ export default function App() {
   const [selectedNovel, setNovel]    = useState(null);
   const [selectedChapter, setChapter] = useState(null);
   const [isMobileMenuOpen, setMobile] = useState(false);
+  const [openJournal, setOpenJournal] = useState(null); // 'hakodate' | null
   const [activeFilter, setFilter]    = useState({ type: null, value: null }); // {type:'tag'|'category', value}
 
   // 搜尋（同時驅動右側欄 input 和頂部搜尋頁）
@@ -90,6 +94,10 @@ export default function App() {
   const renderMain = () => {
     if (activeTab === 'about' && view === 'list') {
       return <AboutPage avatarUrl={avatarUrl} setAvatarUrl={setAvatarUrl} />;
+    }
+
+    if (activeTab === 'travels' && view === 'list') {
+      return <TravelPage onOpenJournal={(component) => setOpenJournal(component)} />;
     }
 
     if (view === 'novel_detail' && selectedNovel) {
@@ -156,6 +164,10 @@ export default function App() {
 
   // ── JSX ──────────────────────────────────────────────────
   return (
+    <>
+    {openJournal === 'hakodate' && (
+      <HakodateApp onClose={() => setOpenJournal(null)} />
+    )}
     <div className="flex min-h-screen bg-[#f8f9fa] dark:bg-[#1a1a1a] font-sans transition-colors duration-300">
 
       {/* 行動裝置頂部列 */}
@@ -201,5 +213,6 @@ export default function App() {
 
       </div>
     </div>
+    </>
   );
 }

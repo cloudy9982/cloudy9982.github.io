@@ -25,6 +25,7 @@ export const SITE_CONFIG = {
     { id: 'home',    labelKey: '主頁',  icon: 'Home'     },
     { id: 'about',   labelKey: '關於',  icon: 'User'     },
     { id: 'novels',  labelKey: '小說',  icon: 'BookOpen' },
+    { id: 'travels', labelKey: '旅遊',  icon: 'MapPin'   },
     { id: 'archive', labelKey: '歸檔',  icon: 'Archive'  },
     { id: 'links',   labelKey: '鏈接',  icon: 'Link'     },
   ],

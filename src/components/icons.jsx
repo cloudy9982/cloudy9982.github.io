@@ -23,6 +23,7 @@ export {
   Camera,       // 大頭照相機 icon（用於 avatar 編輯）
   ExternalLink,
   Edit2,
+  MapPin,
 } from 'lucide-react';
 
 /** GitHub (lucide 已移除品牌 icon，自行維護) */
