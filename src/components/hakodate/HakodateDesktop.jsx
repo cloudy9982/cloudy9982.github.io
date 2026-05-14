@@ -6,6 +6,8 @@ import React, { useState, useEffect } from 'react';
 import { TRIP_INFO } from '../../data/travel-info';
 import FlightCard from './FlightCard';
 import DesktopSchedule from './DesktopSchedule';
+import DesktopMapView from './DesktopMapView';
+import DesktopBudgetView from './DesktopBudgetView';
 import DesktopRightPanel from './DesktopRightPanel';
 
 const NAV_TABS = [
@@ -30,7 +32,15 @@ export default function HakodateDesktop({ onClose }) {
       return {};
     }
   });
-  const [expenses, setExpenses]             = useState([]);
+  const [activeSpotId, setActiveSpotId]     = useState(null);
+  const [expenses, setExpenses]             = useState(() => {
+    try {
+      const raw = localStorage.getItem('hakodate-expenses');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const trip = TRIP_INFO;
   const rawDay = trip.days[selectedDay];
@@ -80,8 +90,15 @@ export default function HakodateDesktop({ onClose }) {
     setEditData({});
   };
 
-  const addExpense = (exp) => setExpenses((p) => [...p, { id: Date.now(), ...exp }]);
-  const removeExpense = (id) => setExpenses((p) => p.filter((e) => e.id !== id));
+  const saveExpenses = (next) => {
+    setExpenses(next);
+    try { localStorage.setItem('hakodate-expenses', JSON.stringify(next)); } catch {}
+  };
+
+  const addExpense = (exp) => saveExpenses([...expenses, { id: Date.now(), ...exp }]);
+  const removeExpense = (id) => saveExpenses(expenses.filter((e) => e.id !== id));
+  const updateExpenseSplit = (id, split) =>
+    saveExpenses(expenses.map((e) => (e.id === id ? { ...e, split } : e)));
 
   // ── 日期選擇器（桌面橫向版）────────────────────────────────
   const renderDateBar = () => (
@@ -139,22 +156,27 @@ export default function HakodateDesktop({ onClose }) {
           </div>
         );
       case 'map':
-        // 地圖頁：全高地圖由右側面板提供，主區顯示說明
         return (
-          <div className="rounded-2xl overflow-hidden h-[calc(100vh-200px)]"
-            style={{ background: '#F7F3EA', boxShadow: '0 2px 12px rgba(44,32,21,0.06)' }}>
-            <p className="px-6 py-4 text-[14px]" style={{ color: '#9C8060' }}>
-              地圖顯示於右側面板，可切換「行程」頁籤查看詳細時間軸。
-            </p>
-          </div>
+          <DesktopMapView
+            day={currentDay}
+            activeSpotId={activeSpotId}
+            onSpotClick={setActiveSpotId}
+          />
         );
       case 'budget':
+        return (
+          <DesktopBudgetView
+            expenses={expenses}
+            currentDay={currentDay}
+            onAdd={addExpense}
+            onRemove={removeExpense}
+            onUpdateSplit={updateExpenseSplit}
+          />
+        );
       case 'spots':
         return (
           <div className="rounded-2xl p-6" style={{ background: '#F7F3EA', boxShadow: '0 2px 12px rgba(44,32,21,0.06)' }}>
-            <p className="text-[14px]" style={{ color: '#9C8060' }}>
-              {activeTab === 'budget' ? '記帳功能' : '備用景點'}詳情請參考右側面板。
-            </p>
+            <p className="text-[14px]" style={{ color: '#9C8060' }}>備用景點詳情請參考右側面板。</p>
           </div>
         );
       default:
@@ -241,7 +263,7 @@ export default function HakodateDesktop({ onClose }) {
       <div className="flex flex-1 overflow-hidden">
 
         {/* 左主內容 */}
-        <main className="flex-1 overflow-y-auto px-8 py-6">
+        <main className={`flex-1 overflow-y-auto${activeTab === 'map' ? '' : ' px-8 py-6'}`}>
           {renderMain()}
         </main>
 
@@ -275,6 +297,8 @@ export default function HakodateDesktop({ onClose }) {
               expenses={expenses}
               onAdd={addExpense}
               onRemove={removeExpense}
+              activeSpotId={activeSpotId}
+              onSpotClick={setActiveSpotId}
             />
           </div>
         </aside>
