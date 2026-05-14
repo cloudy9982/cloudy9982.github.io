@@ -21,7 +21,15 @@ export default function HakodateDesktop({ onClose }) {
   const [flightExpanded, setFlightExpanded] = useState(false);
   const [editMode, setEditMode]             = useState(false);
   const [editData, setEditData]             = useState({});          // { scheduleId: {time,name,location,note} }
-  const [savedEdits, setSavedEdits]         = useState({});          // persisted overrides
+  const [savedEdits, setSavedEdits]         = useState(() => {
+    // 讀取階段：優先從 localStorage 還原，失敗則用空物件
+    try {
+      const raw = localStorage.getItem('hakodate-schedule-edits');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
   const [expenses, setExpenses]             = useState([]);
 
   const trip = TRIP_INFO;
@@ -60,7 +68,14 @@ export default function HakodateDesktop({ onClose }) {
   };
 
   const handleSave = () => {
-    setSavedEdits((prev) => ({ ...prev, ...editData }));
+    const merged = { ...savedEdits, ...editData };
+    setSavedEdits(merged);
+    // 寫入階段：同步存入 localStorage，失敗時靜默忽略
+    try {
+      localStorage.setItem('hakodate-schedule-edits', JSON.stringify(merged));
+    } catch {
+      // localStorage 不可用（如無痕模式配額滿）時不中斷流程
+    }
     setEditMode(false);
     setEditData({});
   };
