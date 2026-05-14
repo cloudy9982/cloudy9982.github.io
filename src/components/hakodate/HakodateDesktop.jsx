@@ -4,6 +4,7 @@
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { TRIP_INFO } from '../../data/travel-info';
+import { useExchangeRate } from '../../hooks';
 import FlightCard from './FlightCard';
 import DesktopSchedule from './DesktopSchedule';
 import DesktopMapView from './DesktopMapView';
@@ -14,7 +15,6 @@ const NAV_TABS = [
   { id: 'schedule', label: '行程' },
   { id: 'map',      label: '地圖' },
   { id: 'budget',   label: '記帳' },
-  { id: 'spots',    label: '景點' },
 ];
 
 export default function HakodateDesktop({ onClose }) {
@@ -33,6 +33,7 @@ export default function HakodateDesktop({ onClose }) {
     }
   });
   const [activeSpotId, setActiveSpotId]     = useState(null);
+  const fx = useExchangeRate();
   const [expenses, setExpenses]             = useState(() => {
     try {
       const raw = localStorage.getItem('hakodate-expenses');
@@ -171,13 +172,8 @@ export default function HakodateDesktop({ onClose }) {
             onAdd={addExpense}
             onRemove={removeExpense}
             onUpdateSplit={updateExpenseSplit}
+            fx={fx}
           />
-        );
-      case 'spots':
-        return (
-          <div className="rounded-2xl p-6" style={{ background: '#F7F3EA', boxShadow: '0 2px 12px rgba(44,32,21,0.06)' }}>
-            <p className="text-[14px]" style={{ color: '#9C8060' }}>備用景點詳情請參考右側面板。</p>
-          </div>
         );
       default:
         return null;
@@ -299,6 +295,7 @@ export default function HakodateDesktop({ onClose }) {
               onRemove={removeExpense}
               activeSpotId={activeSpotId}
               onSpotClick={setActiveSpotId}
+              fx={fx}
             />
           </div>
         </aside>

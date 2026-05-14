@@ -3,14 +3,20 @@
 // • 行程 tab → 迷你地圖 + 住宿快覽
 // • 地圖 tab → 景點列表（雙向連動）
 // • 記帳 tab → 今日小計 + 結算統計
-// • 景點 tab → 備用景點卡片
 // ============================================================
 import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-const RATE = 0.21;
 const CAT_COLOR = { 餐飲: '#C4956A', 交通: '#7A9E9E', 購物: '#9C8080', 住宿: '#8A9C70', 景點: '#9C8060', 其他: '#A09090' };
+
+// 將時間戳格式化為 yyyy-MM-dd HH:mm
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 // ── 迷你地圖（僅行程 tab 使用）────────────────────────────────
 function MiniMap({ day }) {
@@ -57,8 +63,10 @@ function calcSettlement(expenses) {
 }
 
 // ── 主元件 ─────────────────────────────────────────────────────
-export default function DesktopRightPanel({ tab, day, trip, expenses, onAdd, onRemove, activeSpotId, onSpotClick }) {
-  const [spotsAdded, setSpotsAdded] = useState([]);
+export default function DesktopRightPanel({ tab, day, trip, expenses, onAdd, onRemove, activeSpotId, onSpotClick, fx }) {
+  const rate    = fx?.rate ?? 0.21;
+  const fxReady = fx && fx.lastUpdated;
+  const twd     = (jpy) => Math.round(Number(jpy) * rate);
 
   // ── 行程 tab ──────────────────────────────────────────────
   if (tab === 'schedule') {
@@ -151,7 +159,7 @@ export default function DesktopRightPanel({ tab, day, trip, expenses, onAdd, onR
         <div className="rounded-xl p-4" style={{ background: '#F0EAD8' }}>
           <p className="text-[11px] mb-1" style={{ color: '#9C8060' }}>本日支出 Day {day.day}</p>
           <p className="text-[28px] font-bold" style={{ color: '#2B2015', fontFamily: "'Playfair Display',serif" }}>
-            NT${Math.round(todayJPY * RATE).toLocaleString()}
+            {fxReady ? `NT$${twd(todayJPY).toLocaleString()}` : <span style={{ color: '#B0A090' }}>計算中…</span>}
           </p>
           <p className="text-[12px] mt-0.5" style={{ color: '#9C8060' }}>¥{todayJPY.toLocaleString()} JPY</p>
           <p className="text-[12px] mt-2" style={{ color: '#7A6A5A' }}>共 {todayExp.length} 筆</p>
@@ -195,7 +203,7 @@ export default function DesktopRightPanel({ tab, day, trip, expenses, onAdd, onR
                 <span style={{ color: '#C4956A', fontWeight: 600 }}>{creditor}</span>
               </p>
               <p className="text-[28px] font-bold" style={{ color: '#F7F3EA', fontFamily: "'Playfair Display',serif" }}>
-                NT${Math.round(absBalance * RATE).toLocaleString()}
+                {fxReady ? `NT$${twd(absBalance).toLocaleString()}` : <span style={{ color: '#9C8060' }}>計算中…</span>}
               </p>
               <p className="text-[13px] mt-1" style={{ color: '#9C8060' }}>
                 ¥{Math.round(absBalance).toLocaleString()} JPY
@@ -205,42 +213,41 @@ export default function DesktopRightPanel({ tab, day, trip, expenses, onAdd, onR
         </div>
 
         {/* 匯率換算器 */}
-        <BudgetConverter />
+        <BudgetConverter fx={fx} />
       </div>
     );
   }
 
-  // ── 景點 tab ─────────────────────────────────────────────
-  return (
-    <div className="p-4 space-y-3">
-      <p className="text-[12px]" style={{ color: '#9C8060' }}>收藏景點 {trip.savedSpots.length} 個</p>
-      {trip.savedSpots.map((s) => (
-        <div key={s.id} className="rounded-xl p-4" style={{ background: '#F7F3EA', border: '1px solid #E8DFCC' }}>
-          <p className="text-[14px] font-medium" style={{ color: '#2B2015' }}>{s.name}
-            <span className="text-[11px] ml-1.5 font-normal" style={{ color: '#9C8060', fontStyle: 'italic', fontFamily: "'Playfair Display',serif" }}>{s.nameEn}</span>
-          </p>
-          <p className="text-[11px] mt-0.5 mb-2" style={{ color: '#9C8060' }}>{s.location}</p>
-          <p className="text-[12px] leading-relaxed mb-3" style={{ color: '#5A4A3A' }}>{s.desc}</p>
-          <div className="flex gap-2">
-            <button onClick={() => setSpotsAdded((p) => p.includes(s.id) ? p.filter((i) => i !== s.id) : [...p, s.id])}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-medium"
-              style={{ background: spotsAdded.includes(s.id) ? '#2B2015' : '#E8DFCC', color: spotsAdded.includes(s.id) ? '#F7F3EA' : '#5A4A3A' }}>
-              {spotsAdded.includes(s.id) ? '✓ 已加入' : '+ 加入行程'}
-            </button>
-            <button className="px-3 py-1.5 rounded-lg text-[11px]" style={{ background: '#E8DFCC', color: '#5A4A3A' }}>地圖</button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return null;
 }
 
 // ── 匯率換算小組件 ───────────────────────────────────────────
-function BudgetConverter() {
+function BudgetConverter({ fx }) {
   const [jpy, setJpy] = useState('');
+  const rate     = fx?.rate ?? 0.21;
+  const loading  = !!fx?.loading;
+  const isFb     = !!fx?.isFallback;
+  const updated  = fx?.lastUpdated;
+  const showNT   = jpy && (!loading || updated);   // 已有過快取也能即時換算
+
   return (
     <div className="rounded-xl p-4" style={{ background: '#F7F3EA', border: '1px solid #E8DFCC' }}>
-      <p className="text-[11px] mb-2.5" style={{ color: '#C4956A', fontStyle: 'italic', fontFamily: "'Playfair Display',serif" }}>匯率換算</p>
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="text-[11px]" style={{ color: '#C4956A', fontStyle: 'italic', fontFamily: "'Playfair Display',serif" }}>匯率換算</p>
+        <button
+          onClick={() => fx?.refresh?.()}
+          disabled={loading}
+          title="重新抓取匯率"
+          className="flex items-center justify-center w-6 h-6 rounded-full transition-opacity"
+          style={{ background: '#E8DFCC', opacity: loading ? 0.5 : 1 }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5A4A3A" strokeWidth="2.5"
+            className={loading ? 'animate-spin' : ''}>
+            <path d="M21 12a9 9 0 11-3-6.7L21 8" /><path d="M21 3v5h-5" />
+          </svg>
+        </button>
+      </div>
+
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center gap-1.5 rounded-lg px-2.5 py-2" style={{ background: '#F2EAD6', border: '1px solid #E8DFCC' }}>
           <span className="text-[12px] font-medium flex-none" style={{ color: '#5A4A3A' }}>¥</span>
@@ -250,10 +257,34 @@ function BudgetConverter() {
         <span style={{ color: '#9C8060' }}>→</span>
         <div className="flex-1 flex items-center gap-1.5 rounded-lg px-2.5 py-2" style={{ background: '#F2EAD6', border: '1px solid #E8DFCC' }}>
           <span className="text-[12px] font-medium flex-none" style={{ color: '#5A4A3A' }}>NT$</span>
-          <span className="text-[14px]" style={{ color: jpy ? '#2B2015' : '#B0A090', fontFamily: "'Playfair Display',serif" }}>
-            {jpy ? Math.round(parseFloat(jpy) * 0.21).toLocaleString() : '0'}
+          <span className="text-[14px]" style={{ color: showNT ? '#2B2015' : '#B0A090', fontFamily: "'Playfair Display',serif" }}>
+            {loading && !updated
+              ? '載入中…'
+              : showNT
+                ? Math.round(parseFloat(jpy) * rate).toLocaleString()
+                : '0'}
           </span>
         </div>
+      </div>
+
+      {/* 匯率資訊揭露 */}
+      <div className="mt-3 pt-2.5 space-y-0.5" style={{ borderTop: '1px dashed #DDD3C0' }}>
+        <p className="text-[10px]" style={{ color: '#9C8060' }}>
+          1 JPY = <span style={{ color: '#5A4A3A', fontFamily: "'Playfair Display',serif" }}>{rate.toFixed(4)}</span> TWD
+          {isFb && <span style={{ color: '#C4956A', marginLeft: 6 }}>· 保底匯率</span>}
+        </p>
+        <p className="text-[10px]" style={{ color: '#9C8060' }}>
+          數據來源：臺灣銀行當日匯率參考
+        </p>
+        <p className="text-[10px]" style={{ color: '#B0A090' }}>
+          最後更新：{updated ? fmtTime(updated) : (loading ? '抓取中…' : '尚未更新')}
+        </p>
+        {fx?.error && !isFb && (
+          <p className="text-[10px]" style={{ color: '#C4956A' }}>⚠ {fx.error}（沿用快取匯率）</p>
+        )}
+        {fx?.error && isFb && (
+          <p className="text-[10px]" style={{ color: '#C4956A' }}>⚠ 無法取得即時匯率，已套用保底值 0.21</p>
+        )}
       </div>
     </div>
   );

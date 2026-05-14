@@ -4,7 +4,6 @@
 // ============================================================
 import React, { useState } from 'react';
 
-const RATE       = 0.21;
 const CATEGORIES = ['餐飲', '交通', '購物', '住宿', '景點', '其他'];
 const CAT_COLOR  = { 餐飲: '#C4956A', 交通: '#7A9E9E', 購物: '#9C8080', 住宿: '#8A9C70', 景點: '#9C8060', 其他: '#A09090' };
 const SPLITS     = [
@@ -15,7 +14,9 @@ const SPLITS     = [
 
 const INIT_FORM = { name: '', jpy: '', category: '餐飲', payer: 'Cloudy', split: 'half' };
 
-export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemove, onUpdateSplit }) {
+export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemove, onUpdateSplit, fx }) {
+  const rate = fx?.rate ?? 0.21;
+  const twd  = (jpy) => Math.round(Number(jpy) * rate);
   const [form, setForm]         = useState(INIT_FORM);
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useState('today'); // 'today' | 'all'
@@ -89,7 +90,7 @@ export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemov
                       ¥{Number(e.jpy).toLocaleString()}
                     </p>
                     <p className="text-[11px]" style={{ color: '#9C8060' }}>
-                      NT${Math.round(Number(e.jpy) * RATE).toLocaleString()}
+                      {fx?.loading && !fx?.lastUpdated ? '計算中…' : `NT$${twd(e.jpy).toLocaleString()}`}
                     </p>
                   </div>
                   {/* 支付者 */}
@@ -147,7 +148,9 @@ export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemov
             {form.jpy && (
               <div className="flex items-center px-3 rounded-xl text-[13px] flex-none"
                 style={{ background: '#F0EAD8', color: '#7A6A5A' }}>
-                ≈ NT${Math.round(Number(form.jpy) * RATE).toLocaleString()}
+                {fx?.loading && !fx?.lastUpdated
+                  ? '≈ 計算中…'
+                  : `≈ NT$${twd(form.jpy).toLocaleString()}`}
               </div>
             )}
           </div>

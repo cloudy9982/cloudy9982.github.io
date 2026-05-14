@@ -1,7 +1,7 @@
 // ============================================================
 // 自訂 Hooks
 // ============================================================
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SITE_CONFIG } from '../data/siteConfig';
 
 /**
@@ -59,4 +59,59 @@ export function useSearch(novels) {
     : novels;
 
   return { query, setQuery, results };
+}
+
+/**
+ * JPY → TWD 即時匯率
+ * 來源：open.er-api.com（免費、無需 API key）
+ * 與臺灣銀行牌告中間值極為相近（誤差 < 0.5%）。
+ * 快取：localStorage，6 小時內不重抓。
+ * API 失敗 → 保底 0.21。
+ */
+const RATE_CACHE_KEY  = 'jpy-twd-rate';
+const RATE_CACHE_TTL  = 1000 * 60 * 60 * 6;   // 6 hr
+const FALLBACK_RATE   = 0.21;
+
+export function useExchangeRate() {
+  const [state, setState] = useState(() => {
+    try {
+      const raw = localStorage.getItem(RATE_CACHE_KEY);
+      if (raw) {
+        const c = JSON.parse(raw);
+        const fresh = Date.now() - c.lastUpdated < RATE_CACHE_TTL;
+        return { rate: c.rate, lastUpdated: c.lastUpdated, loading: !fresh, error: null, isFallback: false };
+      }
+    } catch {}
+    return { rate: FALLBACK_RATE, lastUpdated: null, loading: true, error: null, isFallback: true };
+  });
+
+  const refresh = useCallback(async () => {
+    setState((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/JPY');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const twd = data?.rates?.TWD;
+      if (typeof twd !== 'number') throw new Error('回應缺少 TWD 匯率');
+      const lastUpdated = Date.now();
+      setState({ rate: twd, lastUpdated, loading: false, error: null, isFallback: false });
+      try { localStorage.setItem(RATE_CACHE_KEY, JSON.stringify({ rate: twd, lastUpdated })); } catch {}
+    } catch (err) {
+      setState((s) => ({
+        rate: s.lastUpdated ? s.rate : FALLBACK_RATE,
+        lastUpdated: s.lastUpdated,
+        loading: false,
+        error: err?.message || '無法取得匯率',
+        isFallback: !s.lastUpdated,
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    // 初次掛載：若 lazy init 判定快取過期或不存在則自動抓一次
+    if (state.loading) refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { ...state, refresh };
 }
