@@ -34,23 +34,23 @@ export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemov
   return (
     <div className="space-y-5">
       {/* 切換：今日 / 全程 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center flex-wrap gap-2 md:gap-3">
         {['today', 'all'].map((m) => (
           <button key={m} onClick={() => setViewMode(m)}
-            className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+            className="px-3 md:px-4 py-2 rounded-xl text-[12px] md:text-[13px] font-medium transition-all"
             style={{ background: viewMode === m ? '#2B2015' : '#F7F3EA', color: viewMode === m ? '#F7F3EA' : '#5A4A3A', border: viewMode === m ? 'none' : '1px solid #E8DFCC' }}>
             {m === 'today' ? `今日 Day ${currentDay.day}` : '全程總覽'}
           </button>
         ))}
-        <span className="text-[13px] ml-auto" style={{ color: '#9C8060' }}>
+        <span className="text-[12px] md:text-[13px] ml-auto" style={{ color: '#9C8060' }}>
           共 {displayExp.length} 筆 · ¥{displayExp.reduce((s, e) => s + Number(e.jpy), 0).toLocaleString()}
         </span>
       </div>
 
       {/* ── 主列表 ── */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#F7F3EA', boxShadow: '0 2px 12px rgba(44,32,21,0.06)' }}>
-        {/* 表頭 */}
-        <div className="grid text-[11px] font-medium px-5 py-3"
+        {/* 表頭（僅桌面） */}
+        <div className="hidden md:grid text-[11px] font-medium px-5 py-3"
           style={{ gridTemplateColumns: '80px 1fr 80px 100px 80px 160px 36px', color: '#9C8060', borderBottom: '1px solid #E8DFCC', background: '#F0EAD8' }}>
           <span>日期</span>
           <span>項目</span>
@@ -69,7 +69,8 @@ export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemov
           <div>
             {displayExp.map((e, i) => (
               <div key={e.id}>
-                <div className="grid items-center px-5 py-3.5"
+                {/* 桌面：grid 列 */}
+                <div className="hidden md:grid items-center px-5 py-3.5"
                   style={{ gridTemplateColumns: '80px 1fr 80px 100px 80px 160px 36px' }}>
                   {/* 日期 */}
                   <span className="text-[12px]" style={{ color: '#9C8060', fontFamily: "'Playfair Display',serif" }}>
@@ -121,8 +122,61 @@ export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemov
                     </svg>
                   </button>
                 </div>
+
+                {/* 手機：卡片式條目 */}
+                <div className="md:hidden px-4 py-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-medium truncate" style={{ color: '#2B2015' }}>{e.name}</p>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full"
+                          style={{ background: `${CAT_COLOR[e.category]}22`, color: CAT_COLOR[e.category] }}>
+                          {e.category}
+                        </span>
+                        <span className="text-[11px]" style={{ color: '#9C8060', fontFamily: "'Playfair Display',serif" }}>
+                          {e.date?.slice(5).replace('-', '/')}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          style={{ background: e.payer === 'Cloudy' ? '#C4956A22' : '#7A9E9E22', color: e.payer === 'Cloudy' ? '#C4956A' : '#7A9E9E' }}>
+                          {e.payer}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-none">
+                      <p className="text-[16px] font-bold leading-none" style={{ color: '#2B2015', fontFamily: "'Playfair Display',serif" }}>
+                        ¥{Number(e.jpy).toLocaleString()}
+                      </p>
+                      <p className="text-[11px] mt-1" style={{ color: '#9C8060' }}>
+                        {fx?.loading && !fx?.lastUpdated ? '計算中…' : `NT$${twd(e.jpy).toLocaleString()}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-3 pt-3" style={{ borderTop: '1px dashed #DDD3C0' }}>
+                    <div className="flex gap-1.5">
+                      {SPLITS.map((sp) => (
+                        <button key={sp.id} onClick={() => onUpdateSplit(e.id, sp.id)}
+                          title={sp.label}
+                          className="px-3 h-9 rounded-lg text-[12px] font-medium transition-all"
+                          style={{
+                            background: e.split === sp.id ? '#2B2015' : '#E8DFCC',
+                            color: e.split === sp.id ? '#F7F3EA' : '#7A6A5A',
+                          }}>
+                          {sp.short}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => onRemove(e.id)}
+                      className="w-9 h-9 flex items-center justify-center rounded-lg opacity-60 active:opacity-100"
+                      style={{ background: '#F0EAD8' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A4A3A" strokeWidth="2">
+                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
                 {i < displayExp.length - 1 && (
-                  <div style={{ borderTop: '1px dashed #E8DFCC', marginInline: '20px' }} />
+                  <div style={{ borderTop: '1px dashed #E8DFCC', marginInline: '16px' }} />
                 )}
               </div>
             ))}
@@ -132,27 +186,29 @@ export default function DesktopBudgetView({ expenses, currentDay, onAdd, onRemov
 
       {/* ── 新增支出表單 ── */}
       {showForm ? (
-        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#F7F3EA', border: '1.5px solid #C4956A', boxShadow: '0 2px 12px rgba(44,32,21,0.06)' }}>
+        <div className="rounded-2xl p-4 md:p-5 space-y-3 md:space-y-4" style={{ background: '#F7F3EA', border: '1.5px solid #C4956A', boxShadow: '0 2px 12px rgba(44,32,21,0.06)' }}>
           <p className="text-[14px] font-medium" style={{ color: '#2B2015' }}>新增支出</p>
 
-          {/* 第一行：項目 + 金額 */}
-          <div className="flex gap-3">
+          {/* 第一行：項目 + 金額（手機堆疊） */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <input type="text" placeholder="支出項目（例：海鮮丼）" value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="flex-1 rounded-xl px-4 py-2.5 text-[14px] outline-none"
+              className="w-full sm:flex-1 rounded-xl px-4 py-2.5 text-[14px] outline-none"
               style={{ background: '#F2EAD6', color: '#2B2015', border: '1px solid #E8DFCC' }} />
-            <input type="number" placeholder="金額 JPY" value={form.jpy}
-              onChange={(e) => setForm((f) => ({ ...f, jpy: e.target.value }))}
-              className="w-36 rounded-xl px-4 py-2.5 text-[14px] outline-none"
-              style={{ background: '#F2EAD6', color: '#2B2015', border: '1px solid #E8DFCC' }} />
-            {form.jpy && (
-              <div className="flex items-center px-3 rounded-xl text-[13px] flex-none"
-                style={{ background: '#F0EAD8', color: '#7A6A5A' }}>
-                {fx?.loading && !fx?.lastUpdated
-                  ? '≈ 計算中…'
-                  : `≈ NT$${twd(form.jpy).toLocaleString()}`}
-              </div>
-            )}
+            <div className="flex gap-2 sm:gap-3 sm:flex-none">
+              <input type="number" inputMode="numeric" placeholder="金額 JPY" value={form.jpy}
+                onChange={(e) => setForm((f) => ({ ...f, jpy: e.target.value }))}
+                className="flex-1 sm:flex-none sm:w-36 rounded-xl px-4 py-2.5 text-[14px] outline-none"
+                style={{ background: '#F2EAD6', color: '#2B2015', border: '1px solid #E8DFCC' }} />
+              {form.jpy && (
+                <div className="flex items-center px-3 rounded-xl text-[13px] flex-none"
+                  style={{ background: '#F0EAD8', color: '#7A6A5A' }}>
+                  {fx?.loading && !fx?.lastUpdated
+                    ? '≈ 計算中…'
+                    : `≈ NT$${twd(form.jpy).toLocaleString()}`}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 第二行：類別 + 支付者 + 分帳 */}

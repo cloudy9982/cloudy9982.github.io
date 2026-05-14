@@ -159,7 +159,7 @@ export default function DesktopMapView({ day, activeSpotId, onSpotClick }) {
   }, [userPos, spots]);
 
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden" style={{ boxShadow: '0 4px 20px rgba(44,32,21,0.12)' }}>
+    <div className="relative w-full h-[55vh] md:h-full md:rounded-2xl overflow-hidden" style={{ boxShadow: '0 4px 20px rgba(44,32,21,0.12)' }}>
       {/* 地圖本體 */}
       <div ref={mapRef} className="w-full h-full" style={{ background: '#E8E0CC' }} />
 

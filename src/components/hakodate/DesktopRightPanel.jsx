@@ -173,7 +173,7 @@ export default function DesktopRightPanel({ tab, day, trip, expenses, onAdd, onR
             { name: 'Ike',    share: ikeShare,    paid: ikePaid,    color: '#7A9E9E' },
           ].map((p) => (
             <div key={p.name} className="space-y-1">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-2">
                 <span className="text-[13px] font-medium" style={{ color: '#2B2015' }}>{p.name}</span>
                 <span className="text-[12px]" style={{ color: '#9C8060' }}>
                   應付 ¥{Math.round(p.share).toLocaleString()} · 實付 ¥{Math.round(p.paid).toLocaleString()}

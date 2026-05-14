@@ -18,12 +18,12 @@ export default function DesktopSchedule({
     >
       {/* 區塊標題列 */}
       <div
-        className="flex items-center justify-between px-6 py-4"
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2 px-4 md:px-6 py-3 md:py-4"
         style={{ borderBottom: '1px solid #E8DFCC' }}
       >
         <div className="flex items-center gap-3">
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-none"
             style={{ background: '#2B2015' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
@@ -33,20 +33,20 @@ export default function DesktopSchedule({
               <line x1="8" y1="2" x2="8" y2="6" />
             </svg>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[15px] font-medium" style={{ color: '#2B2015' }}>今日行程</p>
-            <p className="text-[12px]" style={{ color: '#9C8060' }}>
+            <p className="text-[12px] truncate" style={{ color: '#9C8060' }}>
               Day {day.day} · {day.date} · {day.schedules.length} 個行程
             </p>
           </div>
         </div>
 
-        {/* 編輯 / 儲存按鈕 */}
-        <div className="flex items-center gap-2">
+        {/* 編輯 / 儲存按鈕（手機放下方並 stretch） */}
+        <div className="flex items-center gap-2 sm:flex-none">
           {editMode && (
             <button
               onClick={onSave}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium transition-colors"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-[13px] font-medium transition-colors"
               style={{ background: '#2B2015', color: '#F7F3EA' }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -57,7 +57,7 @@ export default function DesktopSchedule({
           )}
           <button
             onClick={onToggleEdit}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-[13px] transition-colors"
             style={{
               background: editMode ? '#F0EAD8' : '#F0EAD8',
               color: editMode ? '#C4956A' : '#5A4A3A',
@@ -86,12 +86,11 @@ export default function DesktopSchedule({
       </div>
 
       {/* 時間軸 */}
-      <div className="px-6 py-4 relative">
-        {/* 垂直軸線 */}
+      <div className="px-4 md:px-6 py-3 md:py-4 relative">
+        {/* 垂直軸線（手機 left:66px，桌面 left:82px） */}
         <div
-          className="absolute top-4 bottom-4"
+          className="absolute top-4 bottom-4 left-[66px] md:left-[82px]"
           style={{
-            left: '82px',
             width: '1px',
             background: 'linear-gradient(to bottom, #C4956A80, #E8DFCC)',
           }}
@@ -101,9 +100,9 @@ export default function DesktopSchedule({
           {day.schedules.map((s, i) => {
             const cur = editData[s.id] || s;
             return (
-              <div key={s.id} className="relative flex items-start gap-4 py-3">
+              <div key={s.id} className="relative flex items-start gap-3 md:gap-4 py-3">
                 {/* 時間 */}
-                <div className="w-14 flex-none pt-0.5">
+                <div className="w-12 md:w-14 flex-none pt-0.5">
                   {editMode ? (
                     <input
                       value={cur.time}
@@ -126,11 +125,10 @@ export default function DesktopSchedule({
                   )}
                 </div>
 
-                {/* 軸上圓點 */}
+                {/* 軸上圓點（手機 left:60px，桌面 left:76px） */}
                 <div
-                  className="absolute flex-none w-3 h-3 rounded-full border-2 z-10 mt-1.5"
+                  className="absolute flex-none w-3 h-3 rounded-full border-2 z-10 mt-1.5 left-[60px] md:left-[76px]"
                   style={{
-                    left: '75px',
                     background: editMode ? '#C4956A' : '#F7F3EA',
                     borderColor: '#C4956A',
                   }}
@@ -157,11 +155,11 @@ export default function DesktopSchedule({
                         }}
                         placeholder="行程名稱"
                       />
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           value={cur.location}
                           onChange={(e) => onEditChange(s.id, 'location', e.target.value)}
-                          className="flex-1 text-[12px] rounded-lg px-3 py-1.5 outline-none"
+                          className="w-full sm:flex-1 text-[12px] rounded-lg px-3 py-2 sm:py-1.5 outline-none"
                           style={{
                             background: '#FDFBF4',
                             color: '#5A4A3A',
@@ -172,7 +170,7 @@ export default function DesktopSchedule({
                         <input
                           value={cur.note}
                           onChange={(e) => onEditChange(s.id, 'note', e.target.value)}
-                          className="flex-1 text-[12px] rounded-lg px-3 py-1.5 outline-none"
+                          className="w-full sm:flex-1 text-[12px] rounded-lg px-3 py-2 sm:py-1.5 outline-none"
                           style={{
                             background: '#FDFBF4',
                             color: '#5A4A3A',
