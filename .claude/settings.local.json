@@ -3,7 +3,8 @@
     "allow": [
       "Bash(gh api *)",
       "Bash(ls /Users/zhangxiaoyun/.claude/skills/)",
-      "Read(//Users/zhangxiaoyun/.claude/skills/**)"
+      "Read(//Users/zhangxiaoyun/.claude/skills/**)",
+      "Bash(npm run *)"
     ]
   }
 }

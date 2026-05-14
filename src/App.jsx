@@ -19,7 +19,7 @@ import ArticleCard   from './components/ArticleCard';
 import { NovelDetail, ReaderView } from './components/NovelViews';
 import AboutPage from './components/AboutPage';
 import TravelPage from './components/TravelPage';
-import HakodateApp from './components/hakodate/HakodateApp';
+import HakodateDesktop from './components/hakodate/HakodateDesktop';
 
 export default function App() {
   // ── 全域狀態 ────────────────────────────────────────────
@@ -166,7 +166,7 @@ export default function App() {
   return (
     <>
     {openJournal === 'hakodate' && (
-      <HakodateApp onClose={() => setOpenJournal(null)} />
+      <HakodateDesktop onClose={() => setOpenJournal(null)} />
     )}
     <div className="flex min-h-screen bg-[#f8f9fa] dark:bg-[#1a1a1a] font-sans transition-colors duration-300">
 
