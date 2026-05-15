@@ -76,29 +76,16 @@ export default function TravelPage({ onOpenJournal }) {
 
                 {/* 按鈕：內部遊記 or 外部連結 */}
                 {isInternal ? (
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => onOpenJournal && onOpenJournal(travel.component)}
-                      className="inline-flex items-center gap-2 bg-[#5bb98c] text-white px-5 py-2.5 rounded-xl hover:bg-[#4ea27a] transition-colors text-[15px] font-medium"
-                    >
-                      電腦版
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                        <line x1="8" y1="21" x2="16" y2="21" />
-                        <line x1="12" y1="17" x2="12" y2="21" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => onOpenJournal && onOpenJournal(travel.component)}
-                      className="inline-flex items-center gap-2 bg-[#5bb98c] text-white px-5 py-2.5 rounded-xl hover:bg-[#4ea27a] transition-colors text-[15px] font-medium"
-                    >
-                      手機版
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="6" y="2" width="12" height="20" rx="2" />
-                        <line x1="12" y1="18" x2="12" y2="18" />
-                      </svg>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => onOpenJournal && onOpenJournal(travel.component)}
+                    className="inline-flex items-center gap-2 bg-[#5bb98c] text-white px-5 py-2.5 rounded-xl hover:bg-[#4ea27a] transition-colors text-[15px] font-medium"
+                  >
+                    開啟遊記
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </button>
                 ) : (
                   <a
                     href={travel.url}

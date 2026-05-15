@@ -42,7 +42,7 @@ function MiniMap({ day }) {
     if (spots.length > 1) map.fitBounds(L.latLngBounds(spots.map((s) => [s.lat, s.lng])), { padding: [15, 15] });
     inst.current = map;
     return () => { map.remove(); inst.current = null; };
-  }, [day.day]);
+  }, [day.day, day.schedules]);
 
   return <div ref={ref} style={{ height: '220px', background: '#E8E0CC' }} className="rounded-xl overflow-hidden" />;
 }

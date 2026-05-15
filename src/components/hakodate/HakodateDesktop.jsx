@@ -5,6 +5,7 @@
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { TRIP_INFO } from '../../data/travel-info';
+import { lookupLocation } from '../../data/location-lookup';
 import { useExchangeRate } from '../../hooks';
 import FlightCard from './FlightCard';
 import DesktopSchedule from './DesktopSchedule';
@@ -18,21 +19,47 @@ const NAV_TABS = [
   { id: 'budget',   label: '記帳' },
 ];
 
+// 載入 savedDays：優先讀新 key；無資料時嘗試從舊欄位級 schedule-edits 遷移一次。
+function loadSavedDays() {
+  try {
+    const raw = localStorage.getItem('hakodate-schedules');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+
+  // 舊版相容：把 { [scheduleId]: { time,name,location,note } } 套用到 TRIP_INFO，
+  // 產生完整的 day → schedules 陣列，然後寫入新 key、清除舊 key。
+  try {
+    const oldRaw = localStorage.getItem('hakodate-schedule-edits');
+    if (!oldRaw) return {};
+    const oldEdits = JSON.parse(oldRaw);
+    const migrated = {};
+    TRIP_INFO.days.forEach((d) => {
+      const dirty = d.schedules.some((s) => oldEdits[s.id]);
+      if (dirty) {
+        migrated[d.day] = d.schedules.map((s) =>
+          oldEdits[s.id] ? { ...s, ...oldEdits[s.id] } : s
+        );
+      }
+    });
+    try {
+      localStorage.setItem('hakodate-schedules', JSON.stringify(migrated));
+      localStorage.removeItem('hakodate-schedule-edits');
+    } catch {}
+    return migrated;
+  } catch {
+    return {};
+  }
+}
+
 export default function HakodateDesktop({ onClose }) {
   const [activeTab, setActiveTab]           = useState('schedule');
   const [selectedDay, setSelectedDay]       = useState(0);
   const [flightExpanded, setFlightExpanded] = useState(false);
-  const [editMode, setEditMode]             = useState(false);
-  const [editData, setEditData]             = useState({});          // { scheduleId: {time,name,location,note} }
-  const [savedEdits, setSavedEdits]         = useState(() => {
-    // 讀取階段：優先從 localStorage 還原，失敗則用空物件
-    try {
-      const raw = localStorage.getItem('hakodate-schedule-edits');
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
+  // editArr：null = 非編輯狀態；否則為「當前日完整行程陣列」的草稿
+  const [editArr, setEditArr]               = useState(null);
+  // savedDays：{ [dayNumber]: [schedule, ...] }
+  // 一旦該日存過一次，就完整覆蓋 TRIP_INFO 對應的 schedules
+  const [savedDays, setSavedDays]           = useState(() => loadSavedDays());
   const [activeSpotId, setActiveSpotId]     = useState(null);
   const fx = useExchangeRate();
   const [expenses, setExpenses]             = useState(() => {
@@ -44,15 +71,14 @@ export default function HakodateDesktop({ onClose }) {
     }
   });
 
+  const editMode = editArr !== null;
   const trip = TRIP_INFO;
   const rawDay = trip.days[selectedDay];
 
-  // 合併持久化修改覆蓋原始資料
+  // 當日有效行程：優先取 savedDays，沒有則用 TRIP_INFO 原始資料
   const currentDay = {
     ...rawDay,
-    schedules: rawDay.schedules.map((s) =>
-      savedEdits[s.id] ? { ...s, ...savedEdits[s.id] } : s
-    ),
+    schedules: savedDays[rawDay.day] ?? rawDay.schedules,
   };
 
   // 注入 Google Fonts
@@ -65,31 +91,51 @@ export default function HakodateDesktop({ onClose }) {
     return () => { if (document.head.contains(link)) document.head.removeChild(link); };
   }, []);
 
-  // 進入編輯模式：把當前行程複製進 editData
+  // 進入 / 離開編輯：null ⇄ 當前日 schedules 的深拷貝
   const handleToggleEdit = () => {
     if (!editMode) {
-      const init = {};
-      currentDay.schedules.forEach((s) => { init[s.id] = { time: s.time, name: s.name, location: s.location, note: s.note }; });
-      setEditData(init);
+      setEditArr(currentDay.schedules.map((s) => ({ ...s })));
+    } else {
+      setEditArr(null);
     }
-    setEditMode((v) => !v);
   };
 
-  const handleEditChange = (id, field, value) => {
-    setEditData((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  const handleEditChange = (idx, field, value) => {
+    setEditArr((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
+  };
+
+  const handleAddSchedule = () => {
+    setEditArr((prev) => [
+      ...prev,
+      {
+        id: `d${currentDay.day}-new-${Date.now()}`,
+        time: '',
+        name: '',
+        location: '',
+        note: '',
+        lat: null,
+        lng: null,
+      },
+    ]);
+  };
+
+  const handleRemoveSchedule = (idx) => {
+    setEditArr((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleSave = () => {
-    const merged = { ...savedEdits, ...editData };
-    setSavedEdits(merged);
-    // 寫入階段：同步存入 localStorage，失敗時靜默忽略
-    try {
-      localStorage.setItem('hakodate-schedule-edits', JSON.stringify(merged));
-    } catch {
-      // localStorage 不可用（如無痕模式配額滿）時不中斷流程
-    }
-    setEditMode(false);
-    setEditData({});
+    // 對每筆地點查表；查到就用查表座標（地點改名時自動重新對齊），
+    // 查不到就保留既有座標（避免使用者僅改文字卻意外讓地圖標記消失）
+    const geocoded = editArr.map((s) => {
+      if (!s.location) return s;
+      const coords = lookupLocation(s.location);
+      if (coords) return { ...s, lat: coords.lat, lng: coords.lng };
+      return s;
+    });
+    const next = { ...savedDays, [currentDay.day]: geocoded };
+    setSavedDays(next);
+    try { localStorage.setItem('hakodate-schedules', JSON.stringify(next)); } catch {}
+    setEditArr(null);
   };
 
   const saveExpenses = (next) => {
@@ -111,7 +157,7 @@ export default function HakodateDesktop({ onClose }) {
         return (
           <button
             key={d.day}
-            onClick={() => { setSelectedDay(i); setEditMode(false); setEditData({}); }}
+            onClick={() => { setSelectedDay(i); setEditArr(null); }}
             className="flex-none flex flex-col items-center justify-center rounded-xl transition-all duration-200 w-[54px] md:w-[64px] min-h-[68px] md:min-h-[78px] py-1.5 md:py-2 px-1"
             style={{
               background: isActive ? '#F7F3EA' : 'transparent',
@@ -147,9 +193,10 @@ export default function HakodateDesktop({ onClose }) {
             />
             <DesktopSchedule
               day={currentDay}
-              editMode={editMode}
-              editData={editData}
+              editArr={editArr}
               onEditChange={handleEditChange}
+              onAddSchedule={handleAddSchedule}
+              onRemoveSchedule={handleRemoveSchedule}
               onToggleEdit={handleToggleEdit}
               onSave={handleSave}
             />

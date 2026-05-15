@@ -103,7 +103,8 @@ export default function DesktopMapView({ day, activeSpotId, onSpotClick }) {
 
     mapInst.current = map;
     return () => { map.remove(); mapInst.current = null; };
-  }, [day.day]);
+    // 重建地圖：日次切換、或當日行程被新增/修改/刪除（陣列 reference 改變）
+  }, [day.day, day.schedules]);
 
   // ── 同步 activeSpotId：更換 icon 並飛至該點 ────────────────
   useEffect(() => {
