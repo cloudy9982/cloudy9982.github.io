@@ -70,6 +70,17 @@ export default function HakodateDesktop({ onClose }) {
       return [];
     }
   });
+  // 結算紀錄陣列：每筆 { id, settledAt, coveredExpenseIds: [...] }
+  // 「最終結算」差額會排除已被結算紀錄覆蓋的 expense；
+  // 「全程支付統計」永遠呈現完整歷史。
+  const [settlements, setSettlements]       = useState(() => {
+    try {
+      const raw = localStorage.getItem('hakodate-settlements');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const editMode = editArr !== null;
   const trip = TRIP_INFO;
@@ -147,6 +158,31 @@ export default function HakodateDesktop({ onClose }) {
   const removeExpense = (id) => saveExpenses(expenses.filter((e) => e.id !== id));
   const updateExpenseSplit = (id, split) =>
     saveExpenses(expenses.map((e) => (e.id === id ? { ...e, split } : e)));
+
+  // ── 結算（settlement）操作 ────────────────────────────────
+  const saveSettlements = (next) => {
+    setSettlements(next);
+    try { localStorage.setItem('hakodate-settlements', JSON.stringify(next)); } catch {}
+  };
+
+  // 把目前所有「未被任何結算紀錄覆蓋」的 expense 一次性標記為已結清。
+  // 不會刪除 expense，僅在新一筆 settlement 物件中記下其 id 清單，
+  // 讓「全程支付統計」維持完整歷史。
+  const settleAll = () => {
+    const coveredAlready = new Set(settlements.flatMap((s) => s.coveredExpenseIds));
+    const toCover = expenses.filter((e) => !coveredAlready.has(e.id)).map((e) => e.id);
+    if (toCover.length === 0) return;
+    saveSettlements([
+      ...settlements,
+      { id: Date.now(), settledAt: new Date().toISOString(), coveredExpenseIds: toCover },
+    ]);
+  };
+
+  // 撤銷最後一筆結算紀錄
+  const undoLastSettlement = () => {
+    if (settlements.length === 0) return;
+    saveSettlements(settlements.slice(0, -1));
+  };
 
   // ── 日期選擇器（RWD：手機緊湊，桌面正常）─────────────────
   const renderDateBar = () => (
@@ -341,6 +377,9 @@ export default function HakodateDesktop({ onClose }) {
               activeSpotId={activeSpotId}
               onSpotClick={setActiveSpotId}
               fx={fx}
+              settlements={settlements}
+              onSettle={settleAll}
+              onUndoSettle={undoLastSettlement}
             />
           </div>
         </aside>

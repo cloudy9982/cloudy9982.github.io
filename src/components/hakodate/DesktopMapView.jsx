@@ -7,6 +7,13 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 // 注入脈衝動畫 CSS（只需注入一次）
+// 插入彈窗 HTML 字串時用，避免地點名稱含 < > " 等字元破壞結構
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 let pulseStyleInjected = false;
 function injectPulseStyle() {
   if (pulseStyleInjected) return;
@@ -85,13 +92,19 @@ export default function DesktopMapView({ day, activeSpotId, onSpotClick }) {
         icon: makeSpotIcon(i, false),
       }).addTo(map);
 
+      const query = encodeURIComponent(`${s.name} 函館`);
       marker.bindPopup(
-        `<div style="font-family:'Noto Serif TC',serif;min-width:140px;padding:2px 0;">
-          <p style="font-size:13px;font-weight:600;color:#2B2015;margin:0 0 3px;">${s.name}</p>
-          <p style="font-size:11px;color:#9C8060;margin:0 0 2px;">${s.location}</p>
-          <p style="font-size:11px;color:#C4956A;margin:0;font-style:italic;">${s.time}</p>
+        `<div style="font-family:'Noto Serif TC',serif;min-width:160px;padding:2px 0;">
+          <p style="font-size:13px;font-weight:600;color:#2B2015;margin:0 0 3px;">${escapeHtml(s.name)}</p>
+          <p style="font-size:11px;color:#9C8060;margin:0 0 2px;">${escapeHtml(s.location)}</p>
+          <p style="font-size:11px;color:#C4956A;margin:0 0 8px;font-style:italic;">${escapeHtml(s.time)}</p>
+          <a href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noopener noreferrer"
+             style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#5A4A3A;background:#F0EAD8;padding:5px 9px;border-radius:6px;text-decoration:none;font-weight:500;border:1px solid #E8DFCC;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            在 Google 地圖中查看
+          </a>
         </div>`,
-        { maxWidth: 220, className: 'hkd-popup' }
+        { maxWidth: 240, className: 'hkd-popup' }
       );
       marker.on('click', () => onSpotClick(s.id));
       markersRef.current[s.id] = { marker, index: i, spot: s };
